@@ -1,5 +1,7 @@
 # Teaching-HEIGVD-SRX-2021-Labo-VPN
 
+> Auteurs: Robin Gaudin & Noémie Plancherel
+
 **Ce travail de laboratoire est à faire en équipes de 2 personnes**
 
 **Pour ce travail de laboratoire, il est votre responsabilité de chercher vous-même sur internet, le support du cours ou toute autre source (vous avez aussi le droit de communiquer avec les autres équipes), toute information relative au sujet VPN, le logiciel eve-ng, les routeur Cisco, etc que vous ne connaissez pas !**
@@ -30,8 +32,8 @@ Dans ce travail de laboratoire, vous allez configurer des routeurs Cisco émulé
 -	Capture Sniffer avec filtres précis sur la communication à épier
 -	Activation du mode « debug » pour certaines fonctions du routeur
 -	Observation des protocoles IPSec
- 
- 
+
+
 ## Matériel
 
 Le logiciel d'émulation à utiliser c'est eve-ng (vous l'avez déjà employé). Vous trouverez ici un [guide très condensé](files/Manuel_EVE-NG.pdf) pour l'utilisation et l'installation de eve-ng.
@@ -108,6 +110,8 @@ Un « protocol » différent de `up` indique la plupart du temps que l’interfa
 
 **Réponse :**  
 
+Non, non n'avons rencontré aucun problème.
+
 ---
 
 
@@ -145,6 +149,10 @@ Pour votre topologie il est utile de contrôler la connectivité entre :
 
 **Réponse :**  
 
+Tous les premiers pings sont passés. Cependant le dernier ping, le ping du routeur R2 vers la machine VPC n'a pas fonctionné. Cela est normal car la machine VPC n'a pas encore d'adresse IP attribuée. De plus, nous pouvons le voir avec la commande `show ip dhcp binding` sur R2; on constate qu'il n'y a aucune adresses IP associées.
+
+Afin d'y remédier, nous pouvons effectuer la commande `ip dhcp` sur la machine VPC pour obtenir une adresse IPV4. On peut contrôler l'adresse IP avec la commande `show`; nous remarquons effectivement que sa nouvelle adresse est `172.17.1.100` et que le ping passe sans problème.
+
 ---
 
 - Activation de « debug » et analyse des messages ping.
@@ -167,6 +175,10 @@ Pour déclencher et pratiquer les captures vous allez « pinger » votre routeur
 ---
 
 **Screenshots :**  
+
+![wireshark_debug](images/wireshark_debug.PNG)
+
+![ip_debug](images/ip_debug.PNG)
 
 ---
 
@@ -239,14 +251,31 @@ Vous pouvez consulter l’état de votre configuration IKE avec les commandes su
 
 **Réponse :**  
 
----
+On peut voir le résumé de nos policy:
 
+![policy_1](images/policy_1.PNG)
+
+![policy_2](images/policy_2.PNG)
+
+Pour le groupe Diffie-Hellman (DH), si l'on va contrôler les informations dans la documentation Cisco, le groupe 5 n'est plus recommandé car il n'a plus assez de bits pour protéger les clés IPsec. Pour une meilleure sécurité, il serait mieux d'opter pour un groupe 14 (2048 bits) ou plus. Le groupe 14 est recommandé jusqu'en 2030.
+
+Au niveau de l'algorithme de chiffrement, `3des` n'est également plus recommandé. A la place, les algorithmes `aes-cbc-128`, `aes-cbc-192` et `aes-cbc-256` sont proposés dans la documentation Cisco.
+
+---
 
 **Question 5: Utilisez la commande `show crypto isakmp key` et faites part de vos remarques :**
 
 ---
 
 **Réponse :**  
+
+Avec cette commande, on peut effectivement voir la clé partagée `cisco-1` entre les deux routeurs.
+
+![key_1](images/key_1.PNG)
+
+![key_2](images/key_2.PNG)
+
+Ce n'est pas une bonne idée de stocker la clé en clair sur le routeur, car cette information pourrait être facilement accessible.
 
 ---
 
@@ -341,6 +370,24 @@ Pensez à démarrer votre sniffer sur la sortie du routeur R2 vers internet avan
 
 **Réponse :**  
 
+Nous pouvons voir les deuc configuration des routeurs ci-dessous:
+
+![crypto_map1](images/crypto_map1.PNG)
+
+![crypto_map2](images/crypto_map2.PNG)
+
+Lors de la configuration des `lifetime` nous avons eu deux messages de warning en prévenant que la taille et le temps n'étaient pas recommandés car ils étaient beaucoup trop bas. Afin d'assurer une meilleure sécurité, il aurait été mieux de suivre leur message et de modifier les valeurs des lifetime au minimum à 900 secondes pour le temps et 102400 KB pour la taille.
+
+![warning](images/warning.PNG)
+
+Lors de l'envoi du ping de la machine `172.16.1.100` vers le routeur R1 `172.17.1.1`, nous avons pu observer les échanges via Wireshark. En regardant le détail d'un paquet envoyé de R1 vers R2, nous voyons que le protocole ESP est bien présent et donc que les paquets étaient bien chiffrés.
+
+![wireshark_ipsec](images/wireshark_ipsec.PNG)
+
+Mode debug sur le routeur R1:
+
+![debug_2](images/debug_2.PNG)
+
 ---
 
 **Question 7: Reportez dans votre rapport une petite explication concernant les différents « timers » utilisés par IKE et IPsec dans cet exercice (recherche Web). :**
@@ -348,6 +395,16 @@ Pensez à démarrer votre sniffer sur la sortie du routeur R2 vers internet avan
 ---
 
 **Réponse :**  
+
+IKE:
+
+- **Keepalive**: intervalle de temps qui supprime les SA si aucun paquet keepalive n'a été envoyé entre les pairs durant ce temps
+- **Lifetime**: temps de vie en secondes des SA pour la première phase du protocole
+
+IPsec:
+
+- **Idle time**: temps maximum auquel la SA restera active lorsqu'il n'y a aucun trafic. Au-delà de ce temps, la SA est supprimée
+- **Lifetime**: temps de vie en secondes des SA pour la seconde phase du protocole
 
 ---
 
@@ -363,6 +420,8 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 
 **Réponse :**  
 
+Nous avons utilisé `ESP` afin d'encapsuler les données et les sécuriser. Puis nous avons également utilisé `IKE` pour la négociation des SAs.
+
 ---
 
 
@@ -371,6 +430,12 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 ---
 
 **Réponse :**  
+
+C'est un mode tunnel car nous l'avons précisé dans la commande `mode tunnel` lors de la configuration de R2. Dans ce mode,  tout le paquet IP est protégé par IPSec, qui lui va encapsuler le paquel original, le chiffrer et lui ajouter un nouvel entête IP. On peut bien voir cet exemple en regardant la capture Wireshark prise lors du ping de `172.17.100` vers `172.16.1.1`:
+
+![ipsec](/home/noemie/Documents/SRX/Labo_4/Teaching-HEIGVD-SRX-2021-Labo-VPN/images/ipsec.png)
+
+On remarque que dans les échanges, les adresses IP sources et destinations intiales n'apparaissent à aucun moment.
 
 ---
 
@@ -381,6 +446,10 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 
 **Réponse :**  
 
+![chiffree_auth](images/chiffree_auth.PNG)
+
+Nous pouvons voir que les parties chiffrées sont l'entête IP originale, entête TCP/UDP, les données et l'ESP trailer. L'algorithme cryptographique correspondant est `AES`.
+
 ---
 
 
@@ -390,6 +459,10 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 
 **Réponse :**  
 
+![chiffree_auth](images/chiffree_auth.PNG)
+
+Nous pouvons constater que les parties authentifiées du paquet sont les mêmes que pour les parties chiffrées et en plus il y 'a l'entête ESP. L'algorithme cryptographique utilisé est `HMAC-SHA1`.
+
 ---
 
 
@@ -398,5 +471,7 @@ En vous appuyant sur les notions vues en cours et vos observations en laboratoir
 ---
 
 **Réponse :**  
+
+Toutes les données authentifiées sont protégées en intégrité. Il n'y a que le nouvel entête IP qui n'est pas intègre. L'algorithme cryptographique correspondant est également `HMAC-SHA1`.
 
 ---
