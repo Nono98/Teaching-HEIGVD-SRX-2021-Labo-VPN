@@ -433,7 +433,7 @@ Nous avons utilisé `ESP` afin d'encapsuler les données et les sécuriser. Puis
 
 C'est un mode tunnel car nous l'avons précisé dans la commande `mode tunnel` lors de la configuration de R2. Dans ce mode,  tout le paquet IP est protégé par IPSec, qui lui va encapsuler le paquel original, le chiffrer et lui ajouter un nouvel entête IP. On peut bien voir cet exemple en regardant la capture Wireshark prise lors du ping de `172.17.100` vers `172.16.1.1`:
 
-![ipsec](/home/noemie/Documents/SRX/Labo_4/Teaching-HEIGVD-SRX-2021-Labo-VPN/images/ipsec.png)
+![ipsec](images/ipsec.png)
 
 On remarque que dans les échanges, les adresses IP sources et destinations intiales n'apparaissent à aucun moment.
 
